@@ -66,7 +66,8 @@ abstract class BaseSttpBackendTracerSpec[F[_]: Async, G[_]: Sync: Trace, Ctx](
             runReq(backend, basicRequest.get(uri"http:///").body(body))
 
           for {
-            _ <- entryPoint(completer)
+            rand <- cats.effect.std.Random.scalaUtilRandom[F]
+            _ <- entryPoint(completer)(rand)
               .root(rootSpanName)
               .use { span =>
                 P.provideK(makeSomeContext(span))(
@@ -107,7 +108,7 @@ abstract class BaseSttpBackendTracerSpec[F[_]: Async, G[_]: Sync: Trace, Ctx](
       })
     }
 
-  def entryPoint(completer: SpanCompleter[F]): EntryPoint[F] = EntryPoint[F](SpanSampler.always[F], completer)
+  def entryPoint(completer: SpanCompleter[F])(implicit r: cats.effect.std.Random[F]): EntryPoint[F] = EntryPoint[F](SpanSampler.always[F], completer)
 
   def makeHttpApp(resp: Response[F]): (HttpApp[F], Ref[F, Map[String, TraceHeaders]]) = {
     val headersRef = Ref.unsafe[F, Map[String, TraceHeaders]](Map.empty)
